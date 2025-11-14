@@ -60,15 +60,15 @@ go mod tidy
 # Build binaries (development mode)
 make build
 # or manually:
-# go build -o bin/tts-daemon ./cmd/daemon
-# go build -o bin/tts-client ./cmd/client
+# go build -o bin/tts-daemon ./cmd/tts-daemon
+# go build -o bin/tts-client ./cmd/tts-client
 
 # Build binaries (release/optimized mode - recommended for production)
 make release
 
 # Optionally, install to your PATH
-go install ./cmd/daemon
-go install ./cmd/client
+go install ./cmd/tts-daemon
+go install ./cmd/tts-client
 ```
 
 **Build modes:**
@@ -597,8 +597,8 @@ After setting up the service, verify it's working:
 ```
 tts-daemon/
 ├── cmd/
-│   ├── daemon/          # Daemon main entry point
-│   └── client/          # Client main entry point
+│   ├── tts-daemon/      # Daemon main entry point
+│   └── tts-client/      # Client main entry point
 ├── internal/
 │   ├── config/          # Configuration parsing
 │   ├── daemon/          # gRPC server implementation

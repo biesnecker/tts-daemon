@@ -13,13 +13,13 @@ build: daemon client
 daemon:
 	@echo "Building daemon..."
 	@mkdir -p bin
-	@go build -o bin/tts-daemon ./cmd/daemon
+	@go build -o bin/tts-daemon ./cmd/tts-daemon
 
 # Build client (development)
 client:
 	@echo "Building client..."
 	@mkdir -p bin
-	@go build -o bin/tts-client ./cmd/client
+	@go build -o bin/tts-client ./cmd/tts-client
 
 # Build both daemon and client (release/optimized)
 release: release-daemon release-client
@@ -28,13 +28,13 @@ release: release-daemon release-client
 release-daemon:
 	@echo "Building daemon (release mode)..."
 	@mkdir -p bin
-	@go build $(RELEASE_FLAGS) -o bin/tts-daemon ./cmd/daemon
+	@go build $(RELEASE_FLAGS) -o bin/tts-daemon ./cmd/tts-daemon
 
 # Build client (release/optimized)
 release-client:
 	@echo "Building client (release mode)..."
 	@mkdir -p bin
-	@go build $(RELEASE_FLAGS) -o bin/tts-client ./cmd/client
+	@go build $(RELEASE_FLAGS) -o bin/tts-client ./cmd/tts-client
 
 # Generate gRPC code from proto files
 proto:
@@ -50,8 +50,8 @@ clean:
 # Install binaries to GOPATH/bin
 install:
 	@echo "Installing..."
-	@go install ./cmd/daemon
-	@go install ./cmd/client
+	@go install ./cmd/tts-daemon
+	@go install ./cmd/tts-client
 
 # Run tests
 test:
