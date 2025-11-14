@@ -1,0 +1,45 @@
+# TTS Daemon Configuration
+# Copy this file to ~/.config/tts-daemon/config.yaml and fill in your credentials
+
+# Azure Cognitive Services settings
+azure:
+  # Your Azure subscription key for Speech Services
+  subscription_key: "YOUR_AZURE_SUBSCRIPTION_KEY"
+  # Azure region (e.g., "westus", "eastus", "westeurope")
+  region: "YOUR_AZURE_REGION"
+  # Maximum queries per second to Azure TTS API
+  # Default: 10.0
+  max_qps: 10.0
+  # Custom voice mappings (optional)
+  # Map language codes to specific Azure neural voice names
+  # If not specified, defaults will be used
+  voices:
+    # Examples:
+    # en-US: "en-US-AriaNeural"     # Different US English voice
+    # es-MX: "es-MX-DaliaNeural"    # Mexican Spanish
+    # fr: "fr-FR-DeniseNeural"      # French
+    # ja-JP: "ja-JP-NanamiNeural"   # Japanese
+
+# Database settings
+database:
+  # Path to SQLite database file for audio cache
+  # Default: ~/.local/share/tts-daemon/cache.db
+  path: ""
+
+# gRPC server settings
+server:
+  # Server address
+  # Default: localhost
+  address: "localhost"
+  # Server port
+  # Default: 50051
+  port: 50051
+
+# Audio playback settings
+audio:
+  # Sample rate in Hz
+  # Default: 44100
+  sample_rate: 44100
+  # Buffer size for audio playback
+  # Default: 4096
+  buffer_size: 4096

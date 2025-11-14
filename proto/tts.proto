@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package tts;
+
+option go_package = "com.biesnecker/tts-daemon/proto";
+
+// TTSService handles text-to-speech requests
+service TTSService {
+  // FetchTTS fetches and caches audio for the given text
+  rpc FetchTTS(TTSRequest) returns (TTSResponse);
+
+  // PlayTTS fetches (if needed), caches, and plays audio for the given text
+  rpc PlayTTS(TTSRequest) returns (PlayResponse);
+
+  // GetCachedAudio retrieves audio from cache without fetching
+  rpc GetCachedAudio(TTSRequest) returns (TTSResponse);
+
+  // DeleteCached removes audio from cache
+  rpc DeleteCached(TTSRequest) returns (DeleteResponse);
+}
+
+// TTSRequest contains the text and language for TTS
+message TTSRequest {
+  string text = 1;
+  string language_code = 2;  // e.g., "en-US", "fr-FR", "es-ES"
+  bool force_refresh = 3;    // if true, bypass cache and refetch from Azure
+}
+
+// TTSResponse contains the audio data and metadata
+message TTSResponse {
+  bool cached = 1;           // whether audio was retrieved from cache
+  bytes audio_data = 2;      // MP3 audio data
+  string cache_key = 3;      // hash used as cache key
+  int64 audio_size = 4;      // size of audio data in bytes
+}
+
+// PlayResponse indicates success/failure of playback
+message PlayResponse {
+  bool success = 1;
+  string message = 2;
+  bool was_cached = 3;
+}
+
+// DeleteResponse indicates success/failure of deletion
+message DeleteResponse {
+  bool success = 1;
+  string message = 2;
+  string cache_key = 3;
+}
