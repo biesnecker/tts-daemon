@@ -26,7 +26,8 @@ type AzureConfig struct {
 
 // DatabaseConfig holds database settings
 type DatabaseConfig struct {
-	Path string `yaml:"path"`
+	Path        string `yaml:"path"`
+	Compression bool   `yaml:"compression"` // Enable zstd compression for cached audio
 }
 
 // ServerConfig holds gRPC server settings

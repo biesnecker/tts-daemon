@@ -25,6 +25,10 @@ database:
   # Path to SQLite database file for audio cache
   # Default: ~/.local/share/tts-daemon/cache.db
   path: ""
+  # Enable zstd compression for cached audio files
+  # Recommended: true (saves disk space with minimal CPU overhead)
+  # Default: false
+  compression: true
 
 # gRPC server settings
 server:

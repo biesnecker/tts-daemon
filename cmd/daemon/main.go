@@ -43,10 +43,11 @@ func main() {
 	log.Printf("Azure region: %s", cfg.Azure.Region)
 	log.Printf("Max QPS: %.2f", cfg.Azure.MaxQPS)
 	log.Printf("Database path: %s", cfg.Database.Path)
+	log.Printf("Database compression: %v", cfg.Database.Compression)
 	log.Printf("Server address: %s:%d", cfg.Server.Address, cfg.Server.Port)
 
 	// Initialize cache
-	cache, err := tts.NewCache(cfg.Database.Path)
+	cache, err := tts.NewCache(cfg.Database.Path, cfg.Database.Compression)
 	if err != nil {
 		log.Fatalf("Failed to initialize cache: %v", err)
 	}

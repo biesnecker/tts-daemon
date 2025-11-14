@@ -12,11 +12,15 @@ import (
 	"unicode"
 
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/klauspost/compress/zstd"
 )
 
 // Cache manages the audio clip cache
 type Cache struct {
-	db *sql.DB
+	db                *sql.DB
+	compressionEnabled bool
+	encoder           *zstd.Encoder
+	decoder           *zstd.Decoder
 }
 
 // CachedAudio represents a cached audio clip
@@ -25,11 +29,12 @@ type CachedAudio struct {
 	Text         string
 	LanguageCode string
 	AudioData    []byte
+	Compression  sql.NullString // "zstd" or NULL for uncompressed
 	CreatedAt    int64
 }
 
 // NewCache creates a new cache instance
-func NewCache(dbPath string) (*Cache, error) {
+func NewCache(dbPath string, compressionEnabled bool) (*Cache, error) {
 	// Create directory if it doesn't exist
 	dir := filepath.Dir(dbPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
@@ -42,8 +47,32 @@ func NewCache(dbPath string) (*Cache, error) {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
 
+	// Initialize encoder/decoder if compression is enabled
+	var encoder *zstd.Encoder
+	var decoder *zstd.Decoder
+	if compressionEnabled {
+		// Create encoder with default compression level
+		encoder, err = zstd.NewWriter(nil)
+		if err != nil {
+			db.Close()
+			return nil, fmt.Errorf("failed to create zstd encoder: %w", err)
+		}
+
+		// Create decoder
+		decoder, err = zstd.NewReader(nil)
+		if err != nil {
+			db.Close()
+			return nil, fmt.Errorf("failed to create zstd decoder: %w", err)
+		}
+	}
+
 	// Create cache instance
-	cache := &Cache{db: db}
+	cache := &Cache{
+		db:                db,
+		compressionEnabled: compressionEnabled,
+		encoder:           encoder,
+		decoder:           decoder,
+	}
 
 	// Initialize schema
 	if err := cache.initSchema(); err != nil {
@@ -56,6 +85,7 @@ func NewCache(dbPath string) (*Cache, error) {
 
 // initSchema creates the database schema
 func (c *Cache) initSchema() error {
+	// Create table if it doesn't exist
 	schema := `
 	CREATE TABLE IF NOT EXISTS audio_cache (
 		cache_key TEXT PRIMARY KEY,
@@ -73,6 +103,27 @@ func (c *Cache) initSchema() error {
 	_, err := c.db.Exec(schema)
 	if err != nil {
 		return fmt.Errorf("failed to create schema: %w", err)
+	}
+
+	// Check if compression column exists and add it if it doesn't
+	var columnExists bool
+	row := c.db.QueryRow(`SELECT COUNT(*) FROM pragma_table_info('audio_cache') WHERE name='compression'`)
+	if err := row.Scan(&columnExists); err != nil {
+		return fmt.Errorf("failed to check for compression column: %w", err)
+	}
+
+	if !columnExists {
+		// Add compression column if it doesn't exist
+		_, err := c.db.Exec(`ALTER TABLE audio_cache ADD COLUMN compression TEXT`)
+		if err != nil {
+			return fmt.Errorf("failed to add compression column: %w", err)
+		}
+	}
+
+	// Create compression index if it doesn't exist
+	_, err = c.db.Exec(`CREATE INDEX IF NOT EXISTS idx_compression ON audio_cache(compression)`)
+	if err != nil {
+		return fmt.Errorf("failed to create compression index: %w", err)
 	}
 
 	return nil
@@ -111,7 +162,7 @@ func (c *Cache) Get(text, languageCode string) (*CachedAudio, error) {
 
 	var audio CachedAudio
 	err := c.db.QueryRow(
-		`SELECT cache_key, text, language_code, audio_data, created_at
+		`SELECT cache_key, text, language_code, audio_data, compression, created_at
 		 FROM audio_cache WHERE cache_key = ?`,
 		cacheKey,
 	).Scan(
@@ -119,6 +170,7 @@ func (c *Cache) Get(text, languageCode string) (*CachedAudio, error) {
 		&audio.Text,
 		&audio.LanguageCode,
 		&audio.AudioData,
+		&audio.Compression,
 		&audio.CreatedAt,
 	)
 
@@ -129,6 +181,23 @@ func (c *Cache) Get(text, languageCode string) (*CachedAudio, error) {
 		return nil, fmt.Errorf("failed to query cache: %w", err)
 	}
 
+	// Decompress if needed
+	if audio.Compression.Valid && audio.Compression.String == "zstd" {
+		if c.decoder == nil {
+			return nil, fmt.Errorf("zstd decoder not initialized")
+		}
+		decompressed, err := c.decoder.DecodeAll(audio.AudioData, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decompress audio data: %w", err)
+		}
+		audio.AudioData = decompressed
+	}
+
+	// If compression is enabled but data is uncompressed, spawn background job to compress it
+	if c.compressionEnabled && !audio.Compression.Valid {
+		go c.recompressEntry(cacheKey, audio.AudioData)
+	}
+
 	return &audio, nil
 }
 
@@ -137,15 +206,32 @@ func (c *Cache) Put(text, languageCode string, audioData []byte) (string, error)
 	cacheKey := GenerateCacheKey(text, languageCode)
 	now := getCurrentTimestamp()
 
+	var dataToStore []byte
+	var compression sql.NullString
+
+	// Compress if enabled
+	if c.compressionEnabled {
+		if c.encoder == nil {
+			return "", fmt.Errorf("zstd encoder not initialized")
+		}
+		compressed := c.encoder.EncodeAll(audioData, nil)
+		dataToStore = compressed
+		compression = sql.NullString{String: "zstd", Valid: true}
+	} else {
+		dataToStore = audioData
+		compression = sql.NullString{Valid: false}
+	}
+
 	_, err := c.db.Exec(
 		`INSERT OR REPLACE INTO audio_cache
-		 (cache_key, text, language_code, audio_data, audio_size, created_at)
-		 VALUES (?, ?, ?, ?, ?, ?)`,
+		 (cache_key, text, language_code, audio_data, audio_size, compression, created_at)
+		 VALUES (?, ?, ?, ?, ?, ?, ?)`,
 		cacheKey,
 		text,
 		languageCode,
-		audioData,
-		len(audioData),
+		dataToStore,
+		len(dataToStore),
+		compression,
 		now,
 	)
 
@@ -154,6 +240,33 @@ func (c *Cache) Put(text, languageCode string, audioData []byte) (string, error)
 	}
 
 	return cacheKey, nil
+}
+
+// recompressEntry compresses an uncompressed cache entry in the background
+func (c *Cache) recompressEntry(cacheKey string, uncompressedData []byte) {
+	if c.encoder == nil {
+		return
+	}
+
+	// Compress the data
+	compressed := c.encoder.EncodeAll(uncompressedData, nil)
+
+	// Update the database entry
+	_, err := c.db.Exec(
+		`UPDATE audio_cache
+		 SET audio_data = ?, audio_size = ?, compression = ?
+		 WHERE cache_key = ? AND compression IS NULL`,
+		compressed,
+		len(compressed),
+		"zstd",
+		cacheKey,
+	)
+
+	if err != nil {
+		// Silently fail - this is a background optimization
+		// We don't want to disrupt the user experience
+		return
+	}
 }
 
 // Delete removes audio from cache
@@ -197,8 +310,14 @@ func (c *Cache) GetStats() (map[string]interface{}, error) {
 	}, nil
 }
 
-// Close closes the database connection
+// Close closes the database connection and cleanup resources
 func (c *Cache) Close() error {
+	if c.encoder != nil {
+		c.encoder.Close()
+	}
+	if c.decoder != nil {
+		c.decoder.Close()
+	}
 	return c.db.Close()
 }
 
