@@ -29,6 +29,12 @@ database:
   # Recommended: true (saves disk space with minimal CPU overhead)
   # Default: false
   compression: true
+  # Maximum cache size in megabytes (MB)
+  # When exceeded, least recently used (LRU) entries will be evicted
+  # Set to 0 for unlimited cache size
+  # Default: 0 (unlimited)
+  # Recommended: 100-500 MB depending on usage
+  max_size_mb: 0
 
 # gRPC server settings
 server:

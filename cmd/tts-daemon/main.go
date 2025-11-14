@@ -44,10 +44,15 @@ func main() {
 	log.Printf("Max QPS: %.2f", cfg.Azure.MaxQPS)
 	log.Printf("Database path: %s", cfg.Database.Path)
 	log.Printf("Database compression: %v", cfg.Database.Compression)
+	if cfg.Database.MaxSizeMB > 0 {
+		log.Printf("Database max size: %d MB", cfg.Database.MaxSizeMB)
+	} else {
+		log.Printf("Database max size: unlimited")
+	}
 	log.Printf("Server address: %s:%d", cfg.Server.Address, cfg.Server.Port)
 
 	// Initialize cache
-	cache, err := tts.NewCache(cfg.Database.Path, cfg.Database.Compression)
+	cache, err := tts.NewCache(cfg.Database.Path, cfg.Database.Compression, cfg.Database.MaxSizeMB)
 	if err != nil {
 		log.Fatalf("Failed to initialize cache: %v", err)
 	}
@@ -59,7 +64,12 @@ func main() {
 	if err != nil {
 		log.Printf("Warning: failed to get cache stats: %v", err)
 	} else {
-		log.Printf("Cache stats: %d clips, %.2f MB", stats["total_clips"], stats["size_mb"])
+		if cfg.Database.MaxSizeMB > 0 {
+			log.Printf("Cache stats: %d clips, %.2f MB / %.2f MB (%.1f%% full)",
+				stats["total_clips"], stats["size_mb"], stats["max_size_mb"], stats["usage_percent"])
+		} else {
+			log.Printf("Cache stats: %d clips, %.2f MB", stats["total_clips"], stats["size_mb"])
+		}
 	}
 
 	// Initialize Azure TTS client with rate limiting

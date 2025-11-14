@@ -28,6 +28,7 @@ type AzureConfig struct {
 type DatabaseConfig struct {
 	Path        string `yaml:"path"`
 	Compression bool   `yaml:"compression"` // Enable zstd compression for cached audio
+	MaxSizeMB   int64  `yaml:"max_size_mb"` // Maximum cache size in MB (0 = unlimited)
 }
 
 // ServerConfig holds gRPC server settings
