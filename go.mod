@@ -4,6 +4,7 @@ go 1.25.3
 
 require (
 	github.com/gopxl/beep v1.4.1
+	github.com/klauspost/compress v1.18.1
 	github.com/mattn/go-sqlite3 v1.14.24
 	golang.org/x/time v0.9.0
 	google.golang.org/grpc v1.68.1
@@ -15,7 +16,6 @@ require (
 	github.com/ebitengine/oto/v3 v3.1.0 // indirect
 	github.com/ebitengine/purego v0.7.1 // indirect
 	github.com/hajimehoshi/go-mp3 v0.3.4 // indirect
-	github.com/klauspost/compress v1.18.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	golang.org/x/net v0.29.0 // indirect
 	golang.org/x/sys v0.25.0 // indirect

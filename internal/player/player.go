@@ -32,16 +32,22 @@ func NewPlayer(sampleRate, bufferSize int) *Player {
 // PlayMP3 plays MP3 audio data
 func (p *Player) PlayMP3(audioData []byte) error {
 	p.mu.Lock()
-	// Initialize speaker if not already done
-	if !p.initialized {
-		err := speaker.Init(p.sampleRate, p.sampleRate.N(time.Second/10))
-		if err != nil {
-			p.mu.Unlock()
-			return fmt.Errorf("failed to initialize speaker: %w", err)
-		}
-		p.initialized = true
+	defer p.mu.Unlock()
+
+	// Reinitialize speaker for each playback to handle sleep/wake cycles
+	// This ensures we always have a fresh audio device context
+	if p.initialized {
+		speaker.Clear()
+		speaker.Close()
+		p.initialized = false
 	}
-	p.mu.Unlock()
+
+	// Initialize speaker with fresh audio context
+	err := speaker.Init(p.sampleRate, p.sampleRate.N(time.Second/10))
+	if err != nil {
+		return fmt.Errorf("failed to initialize speaker: %w", err)
+	}
+	p.initialized = true
 
 	// Create a reader from the audio data
 	reader := bytes.NewReader(audioData)
@@ -69,6 +75,11 @@ func (p *Player) PlayMP3(audioData []byte) error {
 
 	// Wait for playback to complete
 	<-done
+
+	// Clean up after playback
+	speaker.Clear()
+	speaker.Close()
+	p.initialized = false
 
 	return nil
 }
