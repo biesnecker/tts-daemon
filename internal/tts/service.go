@@ -30,15 +30,11 @@ func (s *Service) GetAudio(text, languageCode string, forceRefresh bool) (audioD
 		}
 
 		if cachedAudio != nil {
-			log.Printf("Cache hit for text: %s (language: %s)", text, languageCode)
 			return cachedAudio.AudioData, cachedAudio.CacheKey, true, nil
 		}
-	} else {
-		log.Printf("Force refresh requested for text: %s (language: %s)", text, languageCode)
 	}
 
 	// Cache miss - fetch from Azure
-	log.Printf("Cache miss for text: %s (language: %s), fetching from Azure", text, languageCode)
 	audioData, err = s.azureClient.SynthesizeToMP3(text, languageCode)
 	if err != nil {
 		return nil, "", false, fmt.Errorf("Azure synthesis failed: %w", err)
@@ -48,16 +44,8 @@ func (s *Service) GetAudio(text, languageCode string, forceRefresh bool) (audioD
 	cacheKey, err = s.cache.Put(text, languageCode, audioData)
 	if err != nil {
 		// Don't fail the request if caching fails, just log the error
-		log.Printf("Warning: failed to cache audio: %v", err)
+		log.Printf("Warning: caching failed: %v", err)
 		cacheKey = GenerateCacheKey(text, languageCode)
-	} else {
-		if forceRefresh {
-			log.Printf("Force refreshed and updated cache for text: %s (cache key: %s, size: %d bytes)",
-				text, cacheKey, len(audioData))
-		} else {
-			log.Printf("Cached audio for text: %s (cache key: %s, size: %d bytes)",
-				text, cacheKey, len(audioData))
-		}
 	}
 
 	return audioData, cacheKey, false, nil
@@ -82,12 +70,6 @@ func (s *Service) DeleteCached(text, languageCode string) (cacheKey string, dele
 	cacheKey, deleted, err = s.cache.Delete(text, languageCode)
 	if err != nil {
 		return cacheKey, false, fmt.Errorf("cache delete failed: %w", err)
-	}
-
-	if deleted {
-		log.Printf("Deleted cached audio for text: %s (language: %s, cache key: %s)", text, languageCode, cacheKey)
-	} else {
-		log.Printf("No cached audio found to delete for text: %s (language: %s, cache key: %s)", text, languageCode, cacheKey)
 	}
 
 	return cacheKey, deleted, nil

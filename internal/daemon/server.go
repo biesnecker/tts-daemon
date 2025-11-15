@@ -24,8 +24,6 @@ func NewServer(ttsService *tts.Service) *Server {
 
 // FetchTTS implements the FetchTTS RPC method
 func (s *Server) FetchTTS(ctx context.Context, req *pb.TTSRequest) (*pb.TTSResponse, error) {
-	log.Printf("FetchTTS request: text=%q, language=%s, force=%v", req.Text, req.LanguageCode, req.ForceRefresh)
-
 	if req.Text == "" {
 		return nil, fmt.Errorf("text is required")
 	}
@@ -36,12 +34,14 @@ func (s *Server) FetchTTS(ctx context.Context, req *pb.TTSRequest) (*pb.TTSRespo
 	// Get audio (from cache or fetch from Azure)
 	audioData, cacheKey, cached, err := s.ttsService.GetAudio(req.Text, req.LanguageCode, req.ForceRefresh)
 	if err != nil {
-		log.Printf("FetchTTS error: %v", err)
 		return nil, fmt.Errorf("failed to get audio: %w", err)
 	}
 
-	log.Printf("FetchTTS success: cached=%v, cache_key=%s, size=%d bytes",
-		cached, cacheKey, len(audioData))
+	source := "azure"
+	if cached {
+		source = "cache"
+	}
+	log.Printf("FetchTTS: lang=%s, source=%s, size=%d", req.LanguageCode, source, len(audioData))
 
 	return &pb.TTSResponse{
 		Cached:    cached,
@@ -55,8 +55,7 @@ func (s *Server) FetchTTS(ctx context.Context, req *pb.TTSRequest) (*pb.TTSRespo
 // NOTE: This method is deprecated. Clients should use FetchTTS and play audio locally.
 // Kept for backward compatibility - just returns success without playing.
 func (s *Server) PlayTTS(ctx context.Context, req *pb.TTSRequest) (*pb.PlayResponse, error) {
-	log.Printf("PlayTTS request (deprecated): text=%q, language=%s, force=%v", req.Text, req.LanguageCode, req.ForceRefresh)
-	log.Printf("WARNING: PlayTTS is deprecated. Client should use FetchTTS and play audio locally.")
+	log.Printf("Warning: PlayTTS is deprecated, client should use FetchTTS")
 
 	if req.Text == "" {
 		return nil, fmt.Errorf("text is required")
@@ -66,17 +65,14 @@ func (s *Server) PlayTTS(ctx context.Context, req *pb.TTSRequest) (*pb.PlayRespo
 	}
 
 	// Get audio (from cache or fetch from Azure) but don't play it
-	_, cacheKey, cached, err := s.ttsService.GetAudio(req.Text, req.LanguageCode, req.ForceRefresh)
+	_, _, cached, err := s.ttsService.GetAudio(req.Text, req.LanguageCode, req.ForceRefresh)
 	if err != nil {
-		log.Printf("PlayTTS error getting audio: %v", err)
 		return &pb.PlayResponse{
 			Success:   false,
 			Message:   fmt.Sprintf("failed to get audio: %v", err),
 			WasCached: false,
 		}, nil
 	}
-
-	log.Printf("PlayTTS success (audio fetched but not played): cached=%v, cache_key=%s", cached, cacheKey)
 
 	return &pb.PlayResponse{
 		Success:   true,
@@ -87,8 +83,6 @@ func (s *Server) PlayTTS(ctx context.Context, req *pb.TTSRequest) (*pb.PlayRespo
 
 // GetCachedAudio implements the GetCachedAudio RPC method
 func (s *Server) GetCachedAudio(ctx context.Context, req *pb.TTSRequest) (*pb.TTSResponse, error) {
-	log.Printf("GetCachedAudio request: text=%q, language=%s", req.Text, req.LanguageCode)
-
 	if req.Text == "" {
 		return nil, fmt.Errorf("text is required")
 	}
@@ -99,12 +93,10 @@ func (s *Server) GetCachedAudio(ctx context.Context, req *pb.TTSRequest) (*pb.TT
 	// Get audio from cache only
 	audioData, cacheKey, found, err := s.ttsService.GetCachedAudio(req.Text, req.LanguageCode)
 	if err != nil {
-		log.Printf("GetCachedAudio error: %v", err)
 		return nil, fmt.Errorf("failed to get cached audio: %w", err)
 	}
 
 	if !found {
-		log.Printf("GetCachedAudio: not found in cache, cache_key=%s", cacheKey)
 		return &pb.TTSResponse{
 			Cached:    false,
 			AudioData: nil,
@@ -112,8 +104,6 @@ func (s *Server) GetCachedAudio(ctx context.Context, req *pb.TTSRequest) (*pb.TT
 			AudioSize: 0,
 		}, nil
 	}
-
-	log.Printf("GetCachedAudio success: cache_key=%s, size=%d bytes", cacheKey, len(audioData))
 
 	return &pb.TTSResponse{
 		Cached:    true,
@@ -125,8 +115,6 @@ func (s *Server) GetCachedAudio(ctx context.Context, req *pb.TTSRequest) (*pb.TT
 
 // DeleteCached implements the DeleteCached RPC method
 func (s *Server) DeleteCached(ctx context.Context, req *pb.TTSRequest) (*pb.DeleteResponse, error) {
-	log.Printf("DeleteCached request: text=%q, language=%s", req.Text, req.LanguageCode)
-
 	if req.Text == "" {
 		return nil, fmt.Errorf("text is required")
 	}
@@ -137,7 +125,6 @@ func (s *Server) DeleteCached(ctx context.Context, req *pb.TTSRequest) (*pb.Dele
 	// Delete from cache
 	cacheKey, deleted, err := s.ttsService.DeleteCached(req.Text, req.LanguageCode)
 	if err != nil {
-		log.Printf("DeleteCached error: %v", err)
 		return &pb.DeleteResponse{
 			Success:  false,
 			Message:  fmt.Sprintf("Failed to delete: %v", err),
@@ -153,6 +140,7 @@ func (s *Server) DeleteCached(ctx context.Context, req *pb.TTSRequest) (*pb.Dele
 		}, nil
 	}
 
+	log.Printf("DeleteCached: lang=%s, key=%s", req.LanguageCode, cacheKey[:12])
 	return &pb.DeleteResponse{
 		Success:  true,
 		Message:  "Cache entry deleted successfully",
