@@ -1,6 +1,6 @@
 # TTS (Text-to-Speech) MCP Tool
 
-A local text-to-speech service that converts text to audio and plays it through your speakers.
+A local text-to-speech service that fetches/caches audio from Azure Cognitive Services and plays it through your speakers.
 
 ## Available Tools
 
@@ -29,8 +29,9 @@ For short codes (e.g., "fr"), defaults to most common regional variant (e.g., "f
 
 - **Cached responses**: Same text/language returns instantly from cache
 - **High-quality audio**: Uses Azure Cognitive Services neural voices
-- **Sequential playback**: Multiple requests queue automatically
+- **Client-side playback**: Each client plays audio independently (multiple can play simultaneously)
 - **Offline-capable**: Cached audio works without internet
+- **Daemon handles fetch/cache**: Centralized caching, clients handle playback
 
 ## Best Practices
 

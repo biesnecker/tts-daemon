@@ -12,7 +12,6 @@ import (
 	pb "com.biesnecker/tts-daemon/proto"
 	"com.biesnecker/tts-daemon/internal/config"
 	"com.biesnecker/tts-daemon/internal/daemon"
-	"com.biesnecker/tts-daemon/internal/player"
 	"com.biesnecker/tts-daemon/internal/tts"
 	"google.golang.org/grpc"
 )
@@ -86,15 +85,9 @@ func main() {
 	ttsService := tts.NewService(cache, azureClient)
 	defer ttsService.Close()
 
-	// Initialize audio player
-	audioPlayer := player.NewPlayer(cfg.Audio.SampleRate, cfg.Audio.BufferSize)
-	defer audioPlayer.Close()
-	log.Printf("Audio player initialized (sample rate: %d Hz, buffer size: %d)",
-		cfg.Audio.SampleRate, cfg.Audio.BufferSize)
-
 	// Create gRPC server
 	grpcServer := grpc.NewServer()
-	ttsServer := daemon.NewServer(ttsService, audioPlayer)
+	ttsServer := daemon.NewServer(ttsService)
 	pb.RegisterTTSServiceServer(grpcServer, ttsServer)
 
 	// Start listening

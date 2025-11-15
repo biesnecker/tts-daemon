@@ -10,6 +10,7 @@ import (
 	"time"
 
 	pb "com.biesnecker/tts-daemon/proto"
+	"com.biesnecker/tts-daemon/internal/player"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -109,18 +110,24 @@ func runCLI(address string, playMode bool, language string, cacheOnly bool, forc
 		logInfo("Cache key: %s\n", resp.CacheKey)
 		logInfo("Audio size: %d bytes\n", resp.AudioSize)
 	} else if playMode {
-		// Play audio
-		resp, err := client.PlayTTS(ctx, req)
+		// Fetch audio and play it locally
+		resp, err := client.FetchTTS(ctx, req)
 		if err != nil {
-			log.Fatalf("PlayTTS failed: %v", err)
+			log.Fatalf("FetchTTS failed: %v", err)
 		}
 
-		if !resp.Success {
-			log.Fatalf("Playback failed: %s", resp.Message)
+		// Initialize player
+		audioPlayer := player.NewPlayer(44100, 4096)
+		defer audioPlayer.Close()
+
+		// Play the audio locally
+		err = audioPlayer.PlayMP3(resp.AudioData)
+		if err != nil {
+			log.Fatalf("Playback failed: %v", err)
 		}
 
-		logInfo("%s\n", resp.Message)
-		if resp.WasCached {
+		logInfo("Audio played successfully\n")
+		if resp.Cached {
 			logInfo("(from cache)\n")
 		} else {
 			logInfo("(fetched from Azure)\n")
@@ -340,17 +347,24 @@ func (s *MCPServer) handleToolCall(params map[string]interface{}) (interface{}, 
 		}, nil
 
 	case "play_tts":
-		resp, err := client.PlayTTS(ctx, req)
+		// Fetch audio
+		resp, err := client.FetchTTS(ctx, req)
 		if err != nil {
-			return nil, fmt.Errorf("PlayTTS failed: %w", err)
+			return nil, fmt.Errorf("FetchTTS failed: %w", err)
 		}
 
-		if !resp.Success {
-			return nil, fmt.Errorf("playback failed: %s", resp.Message)
+		// Initialize player
+		audioPlayer := player.NewPlayer(44100, 4096)
+		defer audioPlayer.Close()
+
+		// Play the audio locally
+		err = audioPlayer.PlayMP3(resp.AudioData)
+		if err != nil {
+			return nil, fmt.Errorf("playback failed: %v", err)
 		}
 
 		status := "fetched from Azure and played"
-		if resp.WasCached {
+		if resp.Cached {
 			status = "played from cache"
 		}
 
