@@ -19,6 +19,16 @@ Converts text to speech and caches it without playing.
 - **Use when**: Pre-caching audio for later use
 - **Example**: "Prepare the audio for this phrase but don't play it yet"
 
+### `bulk_fetch_tts`
+Converts multiple texts to speech and caches them concurrently.
+- **Parameters**: `items` (required array of objects with `text` and optional `language_code`)
+- **Use when**: Pre-caching multiple phrases/sentences for efficient batch processing
+- **Features**:
+  - Fetches all items concurrently for faster processing
+  - Automatic deduplication: concurrent requests for the same text share the same fetch
+  - Returns summary showing which items were cached vs. fetched
+- **Example**: "Prepare audio for these 5 Spanish phrases"
+
 ## Supported Languages
 
 20+ languages including: English (en-US), Spanish (es-ES, es-MX), French (fr-FR), German (de-DE), Japanese (ja-JP), Chinese (zh-CN), Korean (ko-KR), Italian (it-IT), Portuguese (pt-BR), Russian (ru-RU), Arabic (ar-SA), Hindi (hi-IN), and more.

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	pb "com.biesnecker/tts-daemon/proto"
@@ -238,6 +239,35 @@ func runMCPServer(address string) {
 						},
 					},
 					{
+						"name":        "bulk_fetch_tts",
+						"description": "Fetch and cache text-to-speech audio for multiple texts concurrently. Concurrent requests for the same text will be deduplicated.",
+						"inputSchema": map[string]interface{}{
+							"type": "object",
+							"properties": map[string]interface{}{
+								"items": map[string]interface{}{
+									"type":        "array",
+									"description": "Array of text/language pairs to fetch",
+									"items": map[string]interface{}{
+										"type": "object",
+										"properties": map[string]interface{}{
+											"text": map[string]interface{}{
+												"type":        "string",
+												"description": "The text to convert to speech",
+											},
+											"language_code": map[string]interface{}{
+												"type":        "string",
+												"description": "Language code (e.g., en-US, fr-FR, es-ES)",
+												"default":     "en-US",
+											},
+										},
+										"required": []string{"text"},
+									},
+								},
+							},
+							"required": []string{"items"},
+						},
+					},
+					{
 						"name":        "play_tts",
 						"description": "Fetch (if needed), cache, and play text-to-speech audio",
 						"inputSchema": map[string]interface{}{
@@ -308,24 +338,23 @@ func (s *MCPServer) handleToolCall(params map[string]interface{}) (interface{}, 
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
-	// Extract common parameters
-	text, ok := arguments["text"].(string)
-	if !ok || text == "" {
-		return nil, fmt.Errorf("missing or invalid 'text' parameter")
-	}
-
-	languageCode := "en-US"
-	if lang, ok := arguments["language_code"].(string); ok && lang != "" {
-		languageCode = lang
-	}
-
-	req := &pb.TTSRequest{
-		Text:         text,
-		LanguageCode: languageCode,
-	}
-
 	switch toolName {
 	case "fetch_tts":
+		// Extract parameters
+		text, ok := arguments["text"].(string)
+		if !ok || text == "" {
+			return nil, fmt.Errorf("missing or invalid 'text' parameter")
+		}
+
+		languageCode := "en-US"
+		if lang, ok := arguments["language_code"].(string); ok && lang != "" {
+			languageCode = lang
+		}
+
+		req := &pb.TTSRequest{
+			Text:         text,
+			LanguageCode: languageCode,
+		}
 		resp, err := client.FetchTTS(ctx, req)
 		if err != nil {
 			return nil, fmt.Errorf("FetchTTS failed: %w", err)
@@ -346,14 +375,100 @@ func (s *MCPServer) handleToolCall(params map[string]interface{}) (interface{}, 
 			},
 		}, nil
 
+	case "bulk_fetch_tts":
+		// Extract items array
+		itemsRaw, ok := arguments["items"].([]interface{})
+		if !ok || len(itemsRaw) == 0 {
+			return nil, fmt.Errorf("missing or invalid 'items' parameter")
+		}
+
+		// Build request
+		bulkReq := &pb.BulkTTSRequest{
+			Requests: make([]*pb.TTSRequest, len(itemsRaw)),
+		}
+
+		for i, itemRaw := range itemsRaw {
+			item, ok := itemRaw.(map[string]interface{})
+			if !ok {
+				return nil, fmt.Errorf("item %d: invalid format", i)
+			}
+
+			text, ok := item["text"].(string)
+			if !ok || text == "" {
+				return nil, fmt.Errorf("item %d: missing or invalid 'text' parameter", i)
+			}
+
+			languageCode := "en-US"
+			if lang, ok := item["language_code"].(string); ok && lang != "" {
+				languageCode = lang
+			}
+
+			bulkReq.Requests[i] = &pb.TTSRequest{
+				Text:         text,
+				LanguageCode: languageCode,
+			}
+		}
+
+		// Fetch all audio
+		bulkResp, err := client.BulkFetchTTS(ctx, bulkReq)
+		if err != nil {
+			return nil, fmt.Errorf("BulkFetchTTS failed: %w", err)
+		}
+
+		// Build summary
+		var summary strings.Builder
+		cached := 0
+		fetched := 0
+		totalSize := int64(0)
+
+		for i, resp := range bulkResp.Responses {
+			if resp.Cached {
+				cached++
+			} else {
+				fetched++
+			}
+			totalSize += resp.AudioSize
+			summary.WriteString(fmt.Sprintf("%d. %s (%s, %d bytes)\n",
+				i+1,
+				bulkReq.Requests[i].Text,
+				map[bool]string{true: "cached", false: "fetched"}[resp.Cached],
+				resp.AudioSize))
+		}
+
+		return map[string]interface{}{
+			"content": []map[string]interface{}{
+				{
+					"type": "text",
+					"text": fmt.Sprintf("Bulk fetch completed: %d cached, %d fetched, %d total bytes\n\n%s",
+						cached, fetched, totalSize, summary.String()),
+				},
+			},
+		}, nil
+
 	case "play_tts":
+		// Extract parameters
+		text, ok := arguments["text"].(string)
+		if !ok || text == "" {
+			return nil, fmt.Errorf("missing or invalid 'text' parameter")
+		}
+
+		languageCode := "en-US"
+		if lang, ok := arguments["language_code"].(string); ok && lang != "" {
+			languageCode = lang
+		}
+
+		req := &pb.TTSRequest{
+			Text:         text,
+			LanguageCode: languageCode,
+		}
+
 		// Fetch audio
 		resp, err := client.FetchTTS(ctx, req)
 		if err != nil {
 			return nil, fmt.Errorf("FetchTTS failed: %w", err)
 		}
 
-		// Initialize player
+		// Create a fresh player for each playback (helps with sleep/wake issues)
 		audioPlayer := player.NewPlayer(44100, 4096)
 		defer audioPlayer.Close()
 

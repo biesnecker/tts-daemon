@@ -51,6 +51,63 @@ func (s *Server) FetchTTS(ctx context.Context, req *pb.TTSRequest) (*pb.TTSRespo
 	}, nil
 }
 
+// BulkFetchTTS implements the BulkFetchTTS RPC method
+func (s *Server) BulkFetchTTS(ctx context.Context, req *pb.BulkTTSRequest) (*pb.BulkTTSResponse, error) {
+	if len(req.Requests) == 0 {
+		return nil, fmt.Errorf("at least one request is required")
+	}
+
+	// Validate all requests
+	for i, r := range req.Requests {
+		if r.Text == "" {
+			return nil, fmt.Errorf("request %d: text is required", i)
+		}
+		if r.LanguageCode == "" {
+			return nil, fmt.Errorf("request %d: language_code is required", i)
+		}
+	}
+
+	// Convert to service request format
+	serviceReqs := make([]struct{ Text, LanguageCode string }, len(req.Requests))
+	forceRefresh := false
+	for i, r := range req.Requests {
+		serviceReqs[i].Text = r.Text
+		serviceReqs[i].LanguageCode = r.LanguageCode
+		if r.ForceRefresh {
+			forceRefresh = true
+		}
+	}
+
+	// Fetch all audio concurrently
+	results := s.ttsService.BulkGetAudio(serviceReqs, forceRefresh)
+
+	// Convert results to response format
+	responses := make([]*pb.TTSResponse, len(results))
+	for i, result := range results {
+		if result.Err != nil {
+			return nil, fmt.Errorf("request %d failed: %w", i, result.Err)
+		}
+
+		source := "azure"
+		if result.Cached {
+			source = "cache"
+		}
+		log.Printf("BulkFetchTTS[%d]: lang=%s, source=%s, size=%d",
+			i, req.Requests[i].LanguageCode, source, len(result.AudioData))
+
+		responses[i] = &pb.TTSResponse{
+			Cached:    result.Cached,
+			AudioData: result.AudioData,
+			CacheKey:  result.CacheKey,
+			AudioSize: int64(len(result.AudioData)),
+		}
+	}
+
+	return &pb.BulkTTSResponse{
+		Responses: responses,
+	}, nil
+}
+
 // PlayTTS implements the PlayTTS RPC method
 // NOTE: This method is deprecated. Clients should use FetchTTS and play audio locally.
 // Kept for backward compatibility - just returns success without playing.

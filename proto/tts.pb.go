@@ -82,6 +82,51 @@ func (x *TTSRequest) GetForceRefresh() bool {
 	return false
 }
 
+// BulkTTSRequest contains multiple TTS requests
+type BulkTTSRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Requests      []*TTSRequest          `protobuf:"bytes,1,rep,name=requests,proto3" json:"requests,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BulkTTSRequest) Reset() {
+	*x = BulkTTSRequest{}
+	mi := &file_proto_tts_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BulkTTSRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BulkTTSRequest) ProtoMessage() {}
+
+func (x *BulkTTSRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_tts_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BulkTTSRequest.ProtoReflect.Descriptor instead.
+func (*BulkTTSRequest) Descriptor() ([]byte, []int) {
+	return file_proto_tts_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *BulkTTSRequest) GetRequests() []*TTSRequest {
+	if x != nil {
+		return x.Requests
+	}
+	return nil
+}
+
 // TTSResponse contains the audio data and metadata
 type TTSResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -95,7 +140,7 @@ type TTSResponse struct {
 
 func (x *TTSResponse) Reset() {
 	*x = TTSResponse{}
-	mi := &file_proto_tts_proto_msgTypes[1]
+	mi := &file_proto_tts_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -107,7 +152,7 @@ func (x *TTSResponse) String() string {
 func (*TTSResponse) ProtoMessage() {}
 
 func (x *TTSResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_tts_proto_msgTypes[1]
+	mi := &file_proto_tts_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -120,7 +165,7 @@ func (x *TTSResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TTSResponse.ProtoReflect.Descriptor instead.
 func (*TTSResponse) Descriptor() ([]byte, []int) {
-	return file_proto_tts_proto_rawDescGZIP(), []int{1}
+	return file_proto_tts_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *TTSResponse) GetCached() bool {
@@ -151,6 +196,51 @@ func (x *TTSResponse) GetAudioSize() int64 {
 	return 0
 }
 
+// BulkTTSResponse contains multiple TTS responses
+type BulkTTSResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Responses     []*TTSResponse         `protobuf:"bytes,1,rep,name=responses,proto3" json:"responses,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BulkTTSResponse) Reset() {
+	*x = BulkTTSResponse{}
+	mi := &file_proto_tts_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BulkTTSResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BulkTTSResponse) ProtoMessage() {}
+
+func (x *BulkTTSResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_tts_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BulkTTSResponse.ProtoReflect.Descriptor instead.
+func (*BulkTTSResponse) Descriptor() ([]byte, []int) {
+	return file_proto_tts_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *BulkTTSResponse) GetResponses() []*TTSResponse {
+	if x != nil {
+		return x.Responses
+	}
+	return nil
+}
+
 // PlayResponse indicates success/failure of playback
 type PlayResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -163,7 +253,7 @@ type PlayResponse struct {
 
 func (x *PlayResponse) Reset() {
 	*x = PlayResponse{}
-	mi := &file_proto_tts_proto_msgTypes[2]
+	mi := &file_proto_tts_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -175,7 +265,7 @@ func (x *PlayResponse) String() string {
 func (*PlayResponse) ProtoMessage() {}
 
 func (x *PlayResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_tts_proto_msgTypes[2]
+	mi := &file_proto_tts_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -188,7 +278,7 @@ func (x *PlayResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlayResponse.ProtoReflect.Descriptor instead.
 func (*PlayResponse) Descriptor() ([]byte, []int) {
-	return file_proto_tts_proto_rawDescGZIP(), []int{2}
+	return file_proto_tts_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *PlayResponse) GetSuccess() bool {
@@ -224,7 +314,7 @@ type DeleteResponse struct {
 
 func (x *DeleteResponse) Reset() {
 	*x = DeleteResponse{}
-	mi := &file_proto_tts_proto_msgTypes[3]
+	mi := &file_proto_tts_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -236,7 +326,7 @@ func (x *DeleteResponse) String() string {
 func (*DeleteResponse) ProtoMessage() {}
 
 func (x *DeleteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_tts_proto_msgTypes[3]
+	mi := &file_proto_tts_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -249,7 +339,7 @@ func (x *DeleteResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteResponse.ProtoReflect.Descriptor instead.
 func (*DeleteResponse) Descriptor() ([]byte, []int) {
-	return file_proto_tts_proto_rawDescGZIP(), []int{3}
+	return file_proto_tts_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *DeleteResponse) GetSuccess() bool {
@@ -282,14 +372,18 @@ const file_proto_tts_proto_rawDesc = "" +
 	"TTSRequest\x12\x12\n" +
 	"\x04text\x18\x01 \x01(\tR\x04text\x12#\n" +
 	"\rlanguage_code\x18\x02 \x01(\tR\flanguageCode\x12#\n" +
-	"\rforce_refresh\x18\x03 \x01(\bR\fforceRefresh\"\x80\x01\n" +
+	"\rforce_refresh\x18\x03 \x01(\bR\fforceRefresh\"=\n" +
+	"\x0eBulkTTSRequest\x12+\n" +
+	"\brequests\x18\x01 \x03(\v2\x0f.tts.TTSRequestR\brequests\"\x80\x01\n" +
 	"\vTTSResponse\x12\x16\n" +
 	"\x06cached\x18\x01 \x01(\bR\x06cached\x12\x1d\n" +
 	"\n" +
 	"audio_data\x18\x02 \x01(\fR\taudioData\x12\x1b\n" +
 	"\tcache_key\x18\x03 \x01(\tR\bcacheKey\x12\x1d\n" +
 	"\n" +
-	"audio_size\x18\x04 \x01(\x03R\taudioSize\"a\n" +
+	"audio_size\x18\x04 \x01(\x03R\taudioSize\"A\n" +
+	"\x0fBulkTTSResponse\x12.\n" +
+	"\tresponses\x18\x01 \x03(\v2\x10.tts.TTSResponseR\tresponses\"a\n" +
 	"\fPlayResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12\x1d\n" +
@@ -298,10 +392,11 @@ const file_proto_tts_proto_rawDesc = "" +
 	"\x0eDeleteResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12\x1b\n" +
-	"\tcache_key\x18\x03 \x01(\tR\bcacheKey2\xd5\x01\n" +
+	"\tcache_key\x18\x03 \x01(\tR\bcacheKey2\x90\x02\n" +
 	"\n" +
 	"TTSService\x12-\n" +
-	"\bFetchTTS\x12\x0f.tts.TTSRequest\x1a\x10.tts.TTSResponse\x12-\n" +
+	"\bFetchTTS\x12\x0f.tts.TTSRequest\x1a\x10.tts.TTSResponse\x129\n" +
+	"\fBulkFetchTTS\x12\x13.tts.BulkTTSRequest\x1a\x14.tts.BulkTTSResponse\x12-\n" +
 	"\aPlayTTS\x12\x0f.tts.TTSRequest\x1a\x11.tts.PlayResponse\x123\n" +
 	"\x0eGetCachedAudio\x12\x0f.tts.TTSRequest\x1a\x10.tts.TTSResponse\x124\n" +
 	"\fDeleteCached\x12\x0f.tts.TTSRequest\x1a\x13.tts.DeleteResponseB!Z\x1fcom.biesnecker/tts-daemon/protob\x06proto3"
@@ -318,27 +413,33 @@ func file_proto_tts_proto_rawDescGZIP() []byte {
 	return file_proto_tts_proto_rawDescData
 }
 
-var file_proto_tts_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_proto_tts_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_proto_tts_proto_goTypes = []any{
-	(*TTSRequest)(nil),     // 0: tts.TTSRequest
-	(*TTSResponse)(nil),    // 1: tts.TTSResponse
-	(*PlayResponse)(nil),   // 2: tts.PlayResponse
-	(*DeleteResponse)(nil), // 3: tts.DeleteResponse
+	(*TTSRequest)(nil),      // 0: tts.TTSRequest
+	(*BulkTTSRequest)(nil),  // 1: tts.BulkTTSRequest
+	(*TTSResponse)(nil),     // 2: tts.TTSResponse
+	(*BulkTTSResponse)(nil), // 3: tts.BulkTTSResponse
+	(*PlayResponse)(nil),    // 4: tts.PlayResponse
+	(*DeleteResponse)(nil),  // 5: tts.DeleteResponse
 }
 var file_proto_tts_proto_depIdxs = []int32{
-	0, // 0: tts.TTSService.FetchTTS:input_type -> tts.TTSRequest
-	0, // 1: tts.TTSService.PlayTTS:input_type -> tts.TTSRequest
-	0, // 2: tts.TTSService.GetCachedAudio:input_type -> tts.TTSRequest
-	0, // 3: tts.TTSService.DeleteCached:input_type -> tts.TTSRequest
-	1, // 4: tts.TTSService.FetchTTS:output_type -> tts.TTSResponse
-	2, // 5: tts.TTSService.PlayTTS:output_type -> tts.PlayResponse
-	1, // 6: tts.TTSService.GetCachedAudio:output_type -> tts.TTSResponse
-	3, // 7: tts.TTSService.DeleteCached:output_type -> tts.DeleteResponse
-	4, // [4:8] is the sub-list for method output_type
-	0, // [0:4] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	0, // 0: tts.BulkTTSRequest.requests:type_name -> tts.TTSRequest
+	2, // 1: tts.BulkTTSResponse.responses:type_name -> tts.TTSResponse
+	0, // 2: tts.TTSService.FetchTTS:input_type -> tts.TTSRequest
+	1, // 3: tts.TTSService.BulkFetchTTS:input_type -> tts.BulkTTSRequest
+	0, // 4: tts.TTSService.PlayTTS:input_type -> tts.TTSRequest
+	0, // 5: tts.TTSService.GetCachedAudio:input_type -> tts.TTSRequest
+	0, // 6: tts.TTSService.DeleteCached:input_type -> tts.TTSRequest
+	2, // 7: tts.TTSService.FetchTTS:output_type -> tts.TTSResponse
+	3, // 8: tts.TTSService.BulkFetchTTS:output_type -> tts.BulkTTSResponse
+	4, // 9: tts.TTSService.PlayTTS:output_type -> tts.PlayResponse
+	2, // 10: tts.TTSService.GetCachedAudio:output_type -> tts.TTSResponse
+	5, // 11: tts.TTSService.DeleteCached:output_type -> tts.DeleteResponse
+	7, // [7:12] is the sub-list for method output_type
+	2, // [2:7] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_proto_tts_proto_init() }
@@ -352,7 +453,7 @@ func file_proto_tts_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_tts_proto_rawDesc), len(file_proto_tts_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

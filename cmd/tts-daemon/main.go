@@ -78,6 +78,12 @@ func main() {
 		}
 	}
 
+	// Fetch available voices from Azure
+	log.Printf("Fetching available voices from Azure...")
+	if err := azureClient.FetchVoiceList(); err != nil {
+		log.Fatalf("Failed to fetch voice list from Azure: %v", err)
+	}
+
 	// Initialize TTS service
 	ttsService := tts.NewService(cache, azureClient)
 	defer ttsService.Close()

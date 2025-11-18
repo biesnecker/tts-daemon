@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	TTSService_FetchTTS_FullMethodName       = "/tts.TTSService/FetchTTS"
+	TTSService_BulkFetchTTS_FullMethodName   = "/tts.TTSService/BulkFetchTTS"
 	TTSService_PlayTTS_FullMethodName        = "/tts.TTSService/PlayTTS"
 	TTSService_GetCachedAudio_FullMethodName = "/tts.TTSService/GetCachedAudio"
 	TTSService_DeleteCached_FullMethodName   = "/tts.TTSService/DeleteCached"
@@ -33,6 +34,8 @@ const (
 type TTSServiceClient interface {
 	// FetchTTS fetches and caches audio for the given text
 	FetchTTS(ctx context.Context, in *TTSRequest, opts ...grpc.CallOption) (*TTSResponse, error)
+	// BulkFetchTTS fetches and caches audio for multiple texts concurrently
+	BulkFetchTTS(ctx context.Context, in *BulkTTSRequest, opts ...grpc.CallOption) (*BulkTTSResponse, error)
 	// PlayTTS fetches (if needed), caches, and plays audio for the given text
 	PlayTTS(ctx context.Context, in *TTSRequest, opts ...grpc.CallOption) (*PlayResponse, error)
 	// GetCachedAudio retrieves audio from cache without fetching
@@ -53,6 +56,16 @@ func (c *tTSServiceClient) FetchTTS(ctx context.Context, in *TTSRequest, opts ..
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(TTSResponse)
 	err := c.cc.Invoke(ctx, TTSService_FetchTTS_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tTSServiceClient) BulkFetchTTS(ctx context.Context, in *BulkTTSRequest, opts ...grpc.CallOption) (*BulkTTSResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BulkTTSResponse)
+	err := c.cc.Invoke(ctx, TTSService_BulkFetchTTS_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -97,6 +110,8 @@ func (c *tTSServiceClient) DeleteCached(ctx context.Context, in *TTSRequest, opt
 type TTSServiceServer interface {
 	// FetchTTS fetches and caches audio for the given text
 	FetchTTS(context.Context, *TTSRequest) (*TTSResponse, error)
+	// BulkFetchTTS fetches and caches audio for multiple texts concurrently
+	BulkFetchTTS(context.Context, *BulkTTSRequest) (*BulkTTSResponse, error)
 	// PlayTTS fetches (if needed), caches, and plays audio for the given text
 	PlayTTS(context.Context, *TTSRequest) (*PlayResponse, error)
 	// GetCachedAudio retrieves audio from cache without fetching
@@ -115,6 +130,9 @@ type UnimplementedTTSServiceServer struct{}
 
 func (UnimplementedTTSServiceServer) FetchTTS(context.Context, *TTSRequest) (*TTSResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method FetchTTS not implemented")
+}
+func (UnimplementedTTSServiceServer) BulkFetchTTS(context.Context, *BulkTTSRequest) (*BulkTTSResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BulkFetchTTS not implemented")
 }
 func (UnimplementedTTSServiceServer) PlayTTS(context.Context, *TTSRequest) (*PlayResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PlayTTS not implemented")
@@ -160,6 +178,24 @@ func _TTSService_FetchTTS_Handler(srv interface{}, ctx context.Context, dec func
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(TTSServiceServer).FetchTTS(ctx, req.(*TTSRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TTSService_BulkFetchTTS_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BulkTTSRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TTSServiceServer).BulkFetchTTS(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TTSService_BulkFetchTTS_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TTSServiceServer).BulkFetchTTS(ctx, req.(*BulkTTSRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -228,6 +264,10 @@ var TTSService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "FetchTTS",
 			Handler:    _TTSService_FetchTTS_Handler,
+		},
+		{
+			MethodName: "BulkFetchTTS",
+			Handler:    _TTSService_BulkFetchTTS_Handler,
 		},
 		{
 			MethodName: "PlayTTS",

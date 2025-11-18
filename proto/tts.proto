@@ -9,6 +9,9 @@ service TTSService {
   // FetchTTS fetches and caches audio for the given text
   rpc FetchTTS(TTSRequest) returns (TTSResponse);
 
+  // BulkFetchTTS fetches and caches audio for multiple texts concurrently
+  rpc BulkFetchTTS(BulkTTSRequest) returns (BulkTTSResponse);
+
   // PlayTTS fetches (if needed), caches, and plays audio for the given text
   rpc PlayTTS(TTSRequest) returns (PlayResponse);
 
@@ -26,12 +29,22 @@ message TTSRequest {
   bool force_refresh = 3;    // if true, bypass cache and refetch from Azure
 }
 
+// BulkTTSRequest contains multiple TTS requests
+message BulkTTSRequest {
+  repeated TTSRequest requests = 1;
+}
+
 // TTSResponse contains the audio data and metadata
 message TTSResponse {
   bool cached = 1;           // whether audio was retrieved from cache
   bytes audio_data = 2;      // MP3 audio data
   string cache_key = 3;      // hash used as cache key
   int64 audio_size = 4;      // size of audio data in bytes
+}
+
+// BulkTTSResponse contains multiple TTS responses
+message BulkTTSResponse {
+  repeated TTSResponse responses = 1;
 }
 
 // PlayResponse indicates success/failure of playback

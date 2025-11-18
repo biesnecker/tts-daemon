@@ -12,20 +12,24 @@ import (
 	"github.com/gopxl/beep/speaker"
 )
 
+var (
+	// Global speaker initialization - speaker can only be initialized once per process
+	speakerOnce sync.Once
+	speakerErr  error
+)
+
 // Player handles audio playback
 type Player struct {
-	sampleRate  beep.SampleRate
-	bufferSize  int
-	initialized bool
-	mu          sync.Mutex
+	sampleRate beep.SampleRate
+	bufferSize int
+	mu         sync.Mutex
 }
 
 // NewPlayer creates a new audio player
 func NewPlayer(sampleRate, bufferSize int) *Player {
 	return &Player{
-		sampleRate:  beep.SampleRate(sampleRate),
-		bufferSize:  bufferSize,
-		initialized: false,
+		sampleRate: beep.SampleRate(sampleRate),
+		bufferSize: bufferSize,
 	}
 }
 
@@ -34,14 +38,12 @@ func (p *Player) PlayMP3(audioData []byte) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	// Initialize speaker once on first playback
-	// Note: beep/speaker doesn't support reinitialization
-	if !p.initialized {
-		err := speaker.Init(p.sampleRate, p.sampleRate.N(time.Second/10))
-		if err != nil {
-			return fmt.Errorf("failed to initialize speaker: %w", err)
-		}
-		p.initialized = true
+	// Initialize speaker once globally (beep/speaker doesn't support reinitialization)
+	speakerOnce.Do(func() {
+		speakerErr = speaker.Init(p.sampleRate, p.sampleRate.N(time.Second/10))
+	})
+	if speakerErr != nil {
+		return fmt.Errorf("failed to initialize speaker: %w", speakerErr)
 	}
 
 	// Clear any queued audio before playing
@@ -79,7 +81,5 @@ func (p *Player) PlayMP3(audioData []byte) error {
 
 // Close cleans up the player resources
 func (p *Player) Close() {
-	if p.initialized {
-		speaker.Clear()
-	}
+	speaker.Clear()
 }
